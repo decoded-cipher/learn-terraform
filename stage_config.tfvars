@@ -1,0 +1,6 @@
+name                = "stage"
+instance_type       = "t2.micro"
+region              = "ap-south-1"
+availability_zone   = "ap-south-1a"
+ami                 = "ami-0f2e255ec956ade7f"
+cidr_block          = "10.0.0.0/16"

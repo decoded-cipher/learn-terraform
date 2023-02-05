@@ -1,0 +1,62 @@
+image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
+
+variables:
+  ENV: dev
+  PLAN: small-ec2.tfplan
+  STATE: small-ec2.tfstate
+
+cache:
+  paths:
+    - .terraform
+
+stages:
+  - validate
+  - build
+  - deploy
+  - cleanup
+
+before_script:
+  - echo "Setting up Terraform"
+  - curl
+    "https://releases.hashicorp.com/terraform/1.2.5/terraform_1.2.5_linux_amd64.zip"
+    -o "terraform.zip" && unzip terraform.zip -d /usr/local/bin && chmod +x
+    /usr/local/bin/terraform && rm -f terraform.zip
+  - terraform init -input=false
+
+validate:
+  stage: validate
+  script:
+    - terraform validate
+
+build:
+  stage: build
+  script:
+    - terraform plan -state=$STATE -out=$PLAN -input=false
+  artifacts:
+    name: plan
+    paths:
+      - $PLAN
+      - $STATE
+
+deploy:
+  stage: deploy
+  script:
+    - terraform apply -state=$STATE -input=false -auto-approve $PLAN
+    - terraform state list -state=$STATE
+    - terraform state show -state=$STATE aws_instance.Gopika_Krishnakumar-tf-sec-01
+  artifacts:
+    name: apply
+    paths:
+      - $STATE
+  dependencies:
+    - build
+
+cleanup:
+  stage: cleanup
+  script:
+    - terraform destroy -state=$STATE -input=false -auto-approve
+  dependencies:
+    - deploy
+  when: manual
+
+
